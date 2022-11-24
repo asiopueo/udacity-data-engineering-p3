@@ -1,110 +1,63 @@
-# Project: Data Modeling with PostGres
-This project is concerned with the modeling of an *analytical database* for the data analystics team of the fictional music streaming startup *Sparkify Ltd.* 
-The analytics team is interested in different business related-questions, such as, what songs the individual users are listening to, in order to make them recommendations for new songs and artists.
+# Project: Data Warehouse
+This project is a continuation of the previous two ones, which were concerned with the implementation of an ELT-pipeline for the data analystics team of the fictional music and audio streaming startup *Sparkify LLC*. The analytics team is interested in different business related-questions, such as what songs the individual users are listening to, in order to make them recommendations for new songs and artists.
 
-Closely related to this question is the ETL process, i.e. establishing a pipeline which extracts the raw data from the original operational database, transforms it, and loads it into the freshly designed analytical DB. Within this project, the target database will be loaded in a python script raw by raw using for loops and SQL-`INSERT` statements. The main data engineering tool here, apart from `Python`, is [Pandas](https://pandas.pydata.org/). The implemented ETL-process is slow and cumbersome, but we will learn more efficient methods during the course of the data engineering nanodegree program. 
+After having dealt with the modeling of a OLAP-database and the establishing of ETL-processes on simple clients (PostGres-database and), it is now our turn to move into the cloud and establish an ETL-pipeline which is closer to the large-scale use-cases, a data engineer encounters in real business scenarios.
+The second is the creation of a ETL-process which takes the raw data and transforms and inserts it into the newly created analytical database.
+
+The raw data consists of the two already familiar documents-based JSON-datasets `log_data` and `song_data`. This time however, the datasets are stored in two AWS S3-buckets in the region `us-west-2` ("Oregon"), instead of being stored locally on the client. Furthermore, the target database shall not be stored within a local database server, but within a cloud-based Redshift cluster.
+
+Hence, it is our task to design an ETL-pipeline (to be more precise *ELT*-pipeline) which extracts the datasets from the S3-buckets, stores them temporarily in two staging tables within the data warehouse, and only then transforms them and saves them in their respective target tables.
+
 
 ## Quick Start
-
-In order to create the analytical database and tables, launch the python (>=3.6.3) script from a terminal:
-```bash
+In order to create the database and both the analytical and staging tables, launch the python (>=3.6.3) script from a terminal:
+```console
 foo@bar:~$ python create_tables.py
 ```
-
-The ETL-process can be started by lauching:
-```bash
+The ELT-process can be started by lauching:
+```console
 foo@bar:~$ python etl.py
 ```
 
 
-## Purpose of the Analytical Database
-The purpose of the analytical database and hence the corresponding ETL process is to enable the Sparkify's data analysis team to do fast and efficient queries about business related questions in a flexible manner.
-
-The songs of a user can be easily extracted from the fact table `fact_table`, and ranked using their number of plays. We interpret a song as highly liked by the user if the song has been played a high number of times, in relative terms (cf. example queries below).
-
-This can be used for a recommender system, for example: If the most liked songs of one user match the most liked songs of another user, measured by an appropriate metric, then an additional liked song by the second song may be recommended to the first user. 
-
-A standard example of such a [recommender system](https://en.wikipedia.org/wiki/Recommender_system) is the use of [cosine similarity](https://en.wikipedia.org/wiki/Cosine_similarity).
-
-Other than that, the database enables Sparkify's the analytical fast and free queries, in order to find songs to promote to a wide audience, do analytical queries on the demographics of the listeners etc.
-
-
-## Database Scheme and Design
-We are using a PostGres-database server. The database itself is called `sparkifydb`. The tables within this database follow the star schema, enabling fast analytical querying.
-
-There are five tables within this DB. These are: 
- - `songplays_fact` the **fact table** in the center of the 'star'
-
-The **dimensional tables** are:
- - `users_dim` - the  containing,
- - `songs_dim` - information about the respective songs, and
- - `artists_dim` - Information about the artists,
- - `time_dim` - more detailed infos about the time when the songplay occurred
-
-
-The schema is as follows:
-*Insert DB Schema here:*
-
-
-## ETL-Pipeline
-This ETL-process differs from the previous ones in that now the data can be directly imported into the Redshift data warehouse from the S3 buckets by utilizing the `COPY`-statement from Redshift/Postgres SQL. For example,
-```
-    COPY source.json.gz
-```
-This ensures a highly efficient import as compared the previous runs which all have implemented pythonic `for`-loops.
-
+## ELT-Pipeline
 The final ETL-pipeline which populates the analytical database is implemented in `etl.py` and consists of stages:
 
- 1. Copy source data into two staging tables,
- 2. asd
+ 1. Process raw song data,
+ 2. Process raw log data.
 
-In the first stage, the song data is imported into the staging tables using dedicated `COPY`-statements.
+In the first stage, the song data is imported using `Pandas` and converted to a Python-`list`, selecting only a subset of five attributes which are necessary to fill `songs_dim`. The same is done with `artists_dim`, selecting also a subset of five attributes from the raw data and inserting into the table using a `for`-loop.
 
-The second stage closely resembles the ETL-processes of the previous projects.
-
+The second stage is more interesting. Firstly, the tables `time_dim` and `user_dim` are being populated. In order to populate `time_dim`, the timestamp `ts` from the log data is extracted and transformed using Pandas into the appropriate tuple 
 ```
 ('timestamp', 'hour', 'day', 'week of year', 'month', 'year', 'weekday')
 ```
-Then, we insert `user_dim` in the direct way again, only selecting the specified columns from the log data, as we have dome in the two dim-tables in the first stage. 
+Then, we insert `user_dim` in the direct way again, only selecting the specified columns from the log data, as we have done in the two dim-tables in the first stage. 
 
-Finally, `fact_songs` is being populated by making an inner join of `artists_dim` with `songs_dim` on `artist_id`.
-
+Finally, `fact_songs` is being populated by making an inner join of `artists_dim` with `songs_dim` on the common attribute `artist_id`.
 
 
 ## Repository
 This repository contains the following files and directories:
 
 ```
-├── .gitignore
+├── images/
+├── dwh.cfg
 ├── create_tables.py
 ├── etl.py
-├── dwh.cfg
 ├── sql_queries.py
 └── README.md
 ```
 
- - `create_tables.py`: Contains function to create. These are `drop_database()`, `create_tables()`, and finally a `main()`-function which ties these functions together by calling `drop_tables()` and `create_tables()`.
+ - `images/`: Contains images for the documentation.
 
-- `sql_queries.py`: This file contains a multitude of SQL query commands, encoded as python strings, which are organized into four blocks: `DROP_TABLES`, `CREATE_TABLES`, `INSERT_RECORD`, `FIND_SONGS`.
-Finally, two lists, `create_list_queries`, and `drop_table_queries` are 
+ - `dwh.cfg`: Configuration file for the python config module. Contains access information for the Redshift datawarehouse, IAM-role, and S3-bucket. *The values were left intentionally black for this public repository.* 
 
- - `etl.py`: `load_staging_tables()`, `insert_tables()`. Finally, the `main()`-function knits everything together.
+ - `create_tables.py`: Contains the functions `drop_tables()` and `create_tables()` to drop and create the staging and analytical databases. Finally, a `main()`-function establishes a connection to the data warehouse and subsequently calls these two functions, i.e. drops and creates the tables again.
+
+- `sql_queries.py`: This file contains a collection of SQL query commands, encoded as python strings, which are organized into four blocks: `DROP_TABLES`, `CREATE_TABLES`, `STAGING TABLES`, `FINAL TABLES`. Finally, four lists of SQL commands, `create_list_queries`, and `drop_table_queries`, `drop_table_queries`, and `insert_table_queries` are formed which are used by the ``create_tables.py`.
+
+ - `etl.py`: `process_song_file()` `process_log_file()` `process_data()`. Finally, the `main()`-function knits everything together.
 
  - `README.md`: The file you are currently reading.
-
-
-
-
-## Example Queries
-Extract the songplays by a user:
-``` sql
-    SELECT FROM
-```
-
-Extract the songplays by a user and rank them by the number of songplays:
-``` sql
-    SELECT FROM
-```
-
-
 
