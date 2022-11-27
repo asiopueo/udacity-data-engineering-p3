@@ -49,7 +49,7 @@ This repository contains the following files and directories:
 └── README.md
 ```
 
- - `images/`: Contains images for the documentation.
+ - `images/`: Contains images for this README file.
 
  - `dwh.cfg`: Configuration file for the python config module. Contains access information for the Redshift datawarehouse, IAM-role, and S3-bucket. *The values were left intentionally black for this public repository.* 
 
@@ -60,4 +60,81 @@ This repository contains the following files and directories:
  - `etl.py`: `process_song_file()` `process_log_file()` `process_data()`. Finally, the `main()`-function knits everything together.
 
  - `README.md`: The file you are currently reading.
+
+
+# [Optional] Example Queries
+
+## List all songs in songs_dim
+List song titles and Ids:
+```sql
+    SELECT title, song_id
+    FROM songs_dim
+```
+Number of song entries in table:
+```sql
+    SELECT COUNT(*) FROM songs_dim
+```
+The full songs_dim table lists 71 titles (cf. notebook).
+
+## List all artists in artists_dim
+List artist name and Ids:
+```sql
+    SELECT name, artist_id
+    FROM artists_dim
+```
+Number of artist entries in table:
+```sql
+    SELECT COUNT(*)
+    FROM artists_dim
+```
+The full artists_dim table lists 69 artists (cf. notebook).
+
+
+## Number of songplays with identifiable song title and artist
+Extract the songplays by a user:
+``` sql
+    SELECT COUNT(logs.songplay_id), songs.title, logs.song_id, artists.name AS num_of_plays
+    FROM songplays_fact AS logs
+    INNER JOIN songs_dim AS songs ON logs.song_id = songs.song_id
+    INNER JOIN artists_dim AS artists ON logs.artist_id = artists.artist_id
+    GROUP BY logs.song_id, songs.title, artists.name
+    ORDER BY COUNT(logs.songplay_id)
+```
+In the full database, this query yields only one singl result, namely: 
+```
+[(1, 'Setanta matins', 'SOZCTXZ12AB0182364', 'Elena')]
+```
+**This means that there is only one songplay in the logs for which we can both identify the song name and/or artist.** This is an artifact of the fact that we are working with a subset of the whole database as it was indicated in the project instructions.
+Unfortunately, this also means that querying the number of songplays for almost any of the songs in `songs_dim` or the artists in `artists_dim` will yield empty results.
+
+**Note:** We have added a similar query named as Custom check in test.ipynb.
+
+## Calculate the average duration of a song
+A sensible way for Sparkify's analytical team to query the platform's user behavior would be to measure their respective "screentimes". Since it is currently not possible to determine the song duration for all songplays we can make a guess instead, and calculate the average song duration. We take this average duration for each songplay.
+
+Calculate the average songplay duration:
+```sql
+    SELECT AVG(duration)
+    FROM songs_dim
+```
+The result is:
+```
+[(Decimal('239.7296760563380282'),)]
+```
+When ETL'ing the full dataset, we obtain the average song duration of **239.7 seconds**.
+
+## Individual user's average screentime per day
+Extract the songplays by a user and rank them by the number of songplays:
+``` sql
+    SELECT logs.user_id, users.last_name, users.first_name, t.year, t.month, t.day, t.hour,
+    239.7 * COUNT(logs.songplay_id) AS time_spent
+    FROM songplays_fact AS logs
+    INNER JOIN users_dim AS users ON logs.user_id = users.user_id
+    INNER JOIN time_dim AS t ON logs.start_time = t.starttime
+    GROUP BY logs.user_id, users.last_name, users.first_name, t.year, t.month, t.day, t.hour
+    ORDER BY logs.user_id, users.last_name, users.first_name, t.year, t.month, t.day, t.hour
+```
+The result of this query is shown in the attached notebook. 
+
+Notice how each result is a multiple of 239.7. Of course, this method will be more accurate for heavy users, but we believe it is still a good guess under these circumstances.
 
