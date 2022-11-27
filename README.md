@@ -36,6 +36,8 @@ Then, we insert `user_dim` in the direct way again, only selecting the specified
 
 Finally, `fact_songs` is being populated by making an inner join of `artists_dim` with `songs_dim` on the common attribute `artist_id`.
 
+<img src='images/er_diagram.png'>
+
 
 ## Repository
 This repository contains the following files and directories:
