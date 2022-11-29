@@ -141,6 +141,24 @@ INSERT INTO users_dim (
     first_name, 
     last_name, 
     gender, 
+    level)
+WITH uniq_staging_events AS (
+    SELECT userId, firstName, lastName, gender, level,
+           ROW_NUMBER() OVER(PARTITION BY userId ORDER BY ts DESC) AS rank
+    FROM staging_events
+            WHERE userid IS NOT NULL
+)
+SELECT userId, firstName, lastName, gender, level
+    FROM uniq_staging_events
+WHERE rank = 1
+""")
+
+user_table_insert_old = ("""
+INSERT INTO users_dim (
+    user_id, 
+    first_name, 
+    last_name, 
+    gender, 
     level
     )
 SELECT DISTINCT 
