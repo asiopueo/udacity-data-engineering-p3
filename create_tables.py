@@ -4,6 +4,16 @@ from sql_queries import create_table_queries, drop_table_queries
 
 
 def drop_tables(cur, conn):
+    """
+    Description: Drops the tables by utilizing the queries stored in sql_queries.py
+
+    Arguments:
+        cur: the cursor object
+        conn: database connection object
+
+    Returns:
+        None
+    """
     print("Attempting to drop existing tables")
     for query in drop_table_queries:
         cur.execute(query)
@@ -11,6 +21,16 @@ def drop_tables(cur, conn):
 
 
 def create_tables(cur, conn):
+    """
+    Description: Creates the tables by utilizing the queries stored in sql_queries.py
+
+    Arguments:
+        cur: the cursor object
+        conn: database connection object
+
+    Returns:
+        None
+    """
     print("Creating tables (2x Staging and 5x OLAP-tables)")
     for query in create_table_queries:
         cur.execute(query)
