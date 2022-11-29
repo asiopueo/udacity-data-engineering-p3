@@ -114,15 +114,16 @@ CREATE TABLE timestamps_dim (
 # STAGING TABLES
 LOG_DATA = config.get('S3', 'LOG_DATA')
 SONG_DATA = config.get('S3', 'SONG_DATA')
+LOG_JSONPATH = config.get("S3","LOG_JSONPATH")
 DWH_ROLE_ARN = config.get('IAM_ROLE', 'ARN')
 
 staging_events_copy = ("""
 COPY staging_events 
 FROM '{}'
 CREDENTIALS 'aws_iam_role={}'
-json 's3://udacity-dend/log_json_path.json'
+json '{}'
 region 'us-west-2'
-""").format(LOG_DATA, DWH_ROLE_ARN)
+""").format(LOG_DATA, DWH_ROLE_ARN, LOG_JSONPATH)
 
 staging_songs_copy = ("""
 COPY staging_songs 
