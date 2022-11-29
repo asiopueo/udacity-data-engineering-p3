@@ -34,7 +34,8 @@ CREATE TABLE staging_events (
     status          INT, 
     ts              BIGINT, 
     userAgent       VARCHAR, 
-    userId          INT)
+    userId          INT
+)
 """)
 
 staging_songs_table_create = ("""
@@ -48,7 +49,8 @@ CREATE TABLE staging_songs (
     song_id          VARCHAR, 
     title            VARCHAR, 
     duration         DOUBLE PRECISION, 
-    year             INT)
+    year             INT
+)
 """)
 
 songplay_table_create = ("""
@@ -61,7 +63,8 @@ CREATE TABLE songplays_fact (
     artist_id        VARCHAR,
     session_id       INT,
     location         VARCHAR,
-    user_agent       VARCHAR)
+    user_agent       VARCHAR
+)
 """)
 
 user_table_create = ("""
@@ -70,7 +73,8 @@ CREATE TABLE users_dim (
     first_name       VARCHAR,
     last_name        VARCHAR, 
     gender           CHAR,
-    level            VARCHAR)
+    level            VARCHAR
+)
 """)
 
 song_table_create = ("""
@@ -79,7 +83,8 @@ CREATE TABLE songs_dim (
     title            VARCHAR NOT NULL,
     artist_id        VARCHAR,
     year             INT,
-    duration         DOUBLE PRECISION NOT NULL)
+    duration         DOUBLE PRECISION NOT NULL
+)
 """)
 
 artist_table_create = ("""
@@ -88,7 +93,8 @@ CREATE TABLE artists_dim (
     name        VARCHAR NOT NULL,
     location    VARCHAR,
     latitude    DOUBLE PRECISION,
-    longitude   DOUBLE PRECISION)
+    longitude   DOUBLE PRECISION
+)
 """)
 
 time_table_create = ("""
@@ -100,7 +106,8 @@ CREATE TABLE timestamps_dim (
     week       INT,
     month      INT,
     year       INT,
-    weekday    INT)
+    weekday    INT
+)
 """)
 
 
@@ -110,14 +117,16 @@ SONG_DATA = config.get('S3', 'SONG_DATA')
 DWH_ROLE_ARN = config.get('IAM_ROLE', 'ARN')
 
 staging_events_copy = ("""
-COPY staging_events FROM '{}'
+COPY staging_events 
+FROM '{}'
 CREDENTIALS 'aws_iam_role={}'
 json 's3://udacity-dend/log_json_path.json'
 region 'us-west-2'
 """).format(LOG_DATA, DWH_ROLE_ARN)
 
 staging_songs_copy = ("""
-COPY staging_songs FROM '{}'
+COPY staging_songs 
+FROM '{}'
 CREDENTIALS 'aws_iam_role={}'
 json 'auto'
 region 'us-west-2'
@@ -126,21 +135,53 @@ region 'us-west-2'
 # FINAL TABLES
 
 user_table_insert = ("""
-INSERT INTO users_dim (user_id, first_name, last_name, gender, level)
-SELECT DISTINCT userId, firstName, lastName, gender, level
+INSERT INTO users_dim (
+    user_id, 
+    first_name, 
+    last_name, 
+    gender, 
+    level
+    )
+SELECT DISTINCT 
+    userId, 
+    firstName, 
+    lastName, 
+    gender, 
+    level
 FROM staging_events
 WHERE page='NextSong'
 """)
 
 song_table_insert = ("""
-INSERT INTO songs_dim (song_id, title, artist_id, year, duration)
-SELECT DISTINCT song_id, title, artist_id, year, duration
+INSERT INTO songs_dim (
+    song_id, 
+    title, 
+    artist_id, 
+    year, 
+    duration)
+SELECT DISTINCT 
+    song_id, 
+    title, 
+    artist_id, 
+    year, 
+    duration
 FROM staging_songs
 """)
 
 artist_table_insert = ("""
-INSERT INTO artists_dim (artist_id, name, location, latitude, longitude)
-SELECT DISTINCT artist_id, artist_name, artist_location, artist_latitude, artist_longitude
+INSERT INTO artists_dim (
+    artist_id, 
+    name, 
+    location, 
+    latitude, 
+    longitude
+)
+SELECT DISTINCT 
+    artist_id, 
+    artist_name, 
+    artist_location, 
+    artist_latitude, 
+    artist_longitude
 FROM staging_songs
 """)
 
@@ -153,16 +194,49 @@ INSERT INTO timestamps_dim (
     week, 
     month, 
     year, 
-    weekday) 
-SELECT DISTINCT ts, start_time, EXTRACT(HOUR FROM start_time), EXTRACT(DAY FROM start_time), EXTRACT(WEEK FROM start_time), EXTRACT(MONTH FROM start_time), EXTRACT(YEAR FROM start_time), EXTRACT(DOW FROM start_time)
-FROM (SELECT ts, TIMESTAMP 'epoch' + ts/1000 * INTERVAL '1 second' AS start_time FROM staging_events)
+    weekday
+) 
+SELECT DISTINCT 
+    ts, 
+    start_time, 
+    EXTRACT(HOUR FROM start_time), 
+    EXTRACT(DAY FROM start_time), 
+    EXTRACT(WEEK FROM start_time), 
+    EXTRACT(MONTH FROM start_time), 
+    EXTRACT(YEAR FROM start_time), 
+    EXTRACT(DOW FROM start_time)
+FROM (
+    SELECT 
+        ts, 
+        TIMESTAMP 'epoch' + ts/1000 * INTERVAL '1 second' AS start_time 
+    FROM staging_events
+)
 """)
 
 
 songplay_table_insert = ("""
-INSERT INTO songplays_fact (ts, user_id, level, song_id, artist_id, session_id, location, user_agent)
-SELECT logs.ts, logs.userId, logs.level, songs.song_id, songs.artist_id, logs.sessionId, logs.location, logs.userAgent
-FROM staging_events AS logs JOIN staging_songs AS songs ON logs.artist=songs.artist_name OR logs.song=songs.title
+INSERT INTO songplays_fact (
+    ts, 
+    user_id, 
+    level, 
+    song_id, 
+    artist_id, 
+    session_id, 
+    location, 
+    user_agent
+)
+SELECT 
+    logs.ts, 
+    logs.userId, 
+    logs.level, 
+    songs.song_id, 
+    songs.artist_id, 
+    logs.sessionId, 
+    logs.location, 
+    logs.userAgent
+FROM staging_events AS logs 
+JOIN staging_songs AS songs 
+ON logs.artist=songs.artist_name OR logs.song=songs.title
 """)
 
 
