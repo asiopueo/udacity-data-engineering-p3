@@ -255,7 +255,7 @@ SELECT
     logs.userAgent
 FROM staging_events AS logs 
 JOIN staging_songs AS songs 
-ON logs.artist=songs.artist_name OR logs.song=songs.title
+ON logs.artist=songs.artist_name AND logs.song=songs.title
 """)
 
 
