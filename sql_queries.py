@@ -23,7 +23,7 @@ CREATE TABLE staging_events (
     gender          VARCHAR, 
     itemInSession   INT, 
     lastName        VARCHAR, 
-    length          VARCHAR, 
+    length          DOUBLE PRECISION, 
     level           VARCHAR, 
     location        VARCHAR, 
     method          VARCHAR, 
