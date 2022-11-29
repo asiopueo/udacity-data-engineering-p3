@@ -5,7 +5,15 @@ from sql_queries import copy_table_queries, insert_table_queries
 
 def load_staging_tables(cur, conn):
     """
-    Loads data (logs and songs) from S3-storage into the staging tables
+    Description: Loads data (logs and songs) from S3-storage into the staging tables
+    utilizing the SQL queries in sql_queries.py
+
+    Arguments:
+        cur: the cursor object
+        conn: database connection object
+
+    Returns:
+        None
     """
     for query in copy_table_queries:
         print("Executing the following query:{}".format(query))
@@ -15,7 +23,15 @@ def load_staging_tables(cur, conn):
 
 def insert_tables(cur, conn):
     """
-    The transformation phase. Here the data is extracted from the staging tables and inserted into the five target tables
+    Description: The transformation phase. Here, the data is extracted from the staging tables and inserted into the five 
+    target tables utilizing the SQL queries in sql_queries.py
+    
+    Arguments:
+        cur: the cursor object
+        conn: database connection object
+
+    Returns:
+        None
     """
     for query in insert_table_queries:
         print("Executing the following query:{}".format(query))
